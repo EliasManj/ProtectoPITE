@@ -17,16 +17,11 @@ import os
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
-ap.add_argument("-d", "--detector", required=True,
-	help="path to OpenCV's deep learning face detector")
-ap.add_argument("-m", "--embedding-model", required=True,
-	help="path to OpenCV's deep learning face embedding model")
-ap.add_argument("-r", "--recognizer", required=True,
-	help="path to model trained to recognize faces")
-ap.add_argument("-l", "--le", required=True,
-	help="path to label encoder")
-ap.add_argument("-c", "--confidence", type=float, default=0.5,
-	help="minimum probability to filter weak detections")
+ap.add_argument("-d", "--detector", help="path to OpenCV's deep learning face detector", default='face_detection_model')
+ap.add_argument("-m", "--embedding-model", help="path to OpenCV's deep learning face embedding model", default='openface_nn4.small2.v1.t7')
+ap.add_argument("-r", "--recognizer", help="path to model trained to recognize faces", default='output/recognizer.pickle')
+ap.add_argument("-l", "--le", help="path to label encoder", default='output/le.pickle')
+ap.add_argument("-c", "--confidence", type=float, default=0.5, help="minimum probability to filter weak detections")
 args = vars(ap.parse_args())
 
 # load our serialized face detector from disk

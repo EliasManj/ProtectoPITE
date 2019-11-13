@@ -5,34 +5,27 @@
 #	--le output/le.pickle --image images/adrian.jpg
 
 # import the necessary packages
-import numpy as np
 import argparse
-import imutils
 import pickle
-import cv2
 import os
+import imutils
+import cv2
+import numpy as np
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
-ap.add_argument("-i", "--image", required=True,
-	help="path to input image")
-ap.add_argument("-d", "--detector", required=True,
-	help="path to OpenCV's deep learning face detector")
-ap.add_argument("-m", "--embedding-model", required=True,
-	help="path to OpenCV's deep learning face embedding model")
-ap.add_argument("-r", "--recognizer", required=True,
-	help="path to model trained to recognize faces")
-ap.add_argument("-l", "--le", required=True,
-	help="path to label encoder")
-ap.add_argument("-c", "--confidence", type=float, default=0.5,
-	help="minimum probability to filter weak detections")
+ap.add_argument("-i", "--image", help="path to input image", default='images/bill0.jpg')
+ap.add_argument("-d", "--detector", help="path to OpenCV's deep learning face detector", default='face_detection_model')
+ap.add_argument("-m", "--embedding-model", help="path to OpenCV's deep learning face embedding model", default='openface_nn4.small2.v1.t7')
+ap.add_argument("-r", "--recognizer", help="path to model trained to recognize faces", default='output/recognizer.pickle')
+ap.add_argument("-l", "--le", help="path to label encoder", default='output/le.pickle')
+ap.add_argument("-c", "--confidence", type=float, default=0.5, help="minimum probability to filter weak detections")
 args = vars(ap.parse_args())
 
 # load our serialized face detector from disk
 print("[INFO] loading face detector...")
 protoPath = os.path.sep.join([args["detector"], "deploy.prototxt"])
-modelPath = os.path.sep.join([args["detector"],
-	"res10_300x300_ssd_iter_140000.caffemodel"])
+modelPath = os.path.sep.join([args["detector"],"res10_300x300_ssd_iter_140000.caffemodel"])
 detector = cv2.dnn.readNetFromCaffe(protoPath, modelPath)
 
 # load our serialized face embedding model from disk
