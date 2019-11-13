@@ -45,7 +45,7 @@ vs = VideoStream(src=0).start()
 time.sleep(2.0)
 
 # start the FPS throughput estimator
-fps = FPS().start()
+fps = FPS().start()	
 
 # loop over frames from the video file stream
 while True:
