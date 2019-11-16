@@ -14,7 +14,71 @@ import pickle
 import time
 import cv2
 import os
+from threading import Thread
+from tkinter import *
 
+class Face:
+    def __init__(self, name):
+        self.name = name
+        self.image = "dataset/{0}/{0}.png".format(name)
+        self.description = "dataset/{0}/{0}.txt".format(name)
+        self.detection_time = 3
+        self.seen_times = 30
+        self.last_seen = False
+        self.count_seen = 0
+
+    def seen(self):
+        self.count_seen += 1
+        print(self.count_seen)
+        if not self.last_seen:
+            self.last_seen = time.time()
+        elif time.time() - self.last_seen > self.detection_time and self.count_seen > self.seen_times:
+            return True
+        return False
+
+    def not_seen(self):
+        self.last_seen = False
+        self.count_seen = 0
+
+
+class FaceTracker:
+    def __init__(self):
+        self.faces = dict()
+
+    def add_face(self, name):
+        self.faces[name] = Face(name)
+
+    def check_face(self, name, probability):
+        if name not in self.faces:
+            self.add_face(name)
+        face = self.faces[name]
+        if float(probability) * 100 > 30:
+            if face.seen():
+                self.show_face_dialog(face.image, face.description)
+                face.count_seen = 0
+                face.last_seen = False
+                #Thread(target=self.show_face_dialog, args=(face,))
+        else:
+            face.not_seen()
+
+    @staticmethod
+    def show_face_dialog(img, txt):
+        root = Tk()
+        root.geometry('500x500')
+        photo = PhotoImage(file = img)
+        labelphoto = Label(root,image = photo)
+        labelphoto.pack()
+        print(img)
+        f = open(txt)
+        print(txt)
+        text = Label(root, text=f.read())
+        text.config(state="disabled")
+        text.pack()
+        root.mainloop()
+        print("No encontro directorios")
+
+
+face_tracker = FaceTracker()
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-d", "--detector", help="path to OpenCV's deep learning face detector", default='face_detection_model')
@@ -27,9 +91,8 @@ args = vars(ap.parse_args())
 # load our serialized face detector from disk
 print("[INFO] loading face detector...")
 protoPath = os.path.sep.join([args["detector"], "deploy.prototxt"])
-modelPath = os.path.sep.join([args["detector"],	"res10_300x300_ssd_iter_140000.caffemodel"])
-protoPath = os.path.join(os.getcwd(), protoPath)
-modelPath = os.path.join(os.getcwd(), modelPath)
+modelPath = os.path.sep.join([args["detector"],
+	"res10_300x300_ssd_iter_140000.caffemodel"])
 detector = cv2.dnn.readNetFromCaffe(protoPath, modelPath)
 
 # load our serialized face embedding model from disk
@@ -42,7 +105,7 @@ le = pickle.loads(open(args["le"], "rb").read())
 
 # initialize the video stream, then allow the camera sensor to warm up
 print("[INFO] starting video stream...")
-vs = VideoStream(src=1).start()
+vs = VideoStream(src=0).start()
 time.sleep(2.0)
 
 # start the FPS throughput estimator
@@ -103,6 +166,7 @@ while True:
 			j = np.argmax(preds)
 			proba = preds[j]
 			name = le.classes_[j]
+			face_tracker.check_face(name, proba)
 			# draw the bounding box of the face along with the
 			# associated probability
 			text = "{}: {:.2f}%".format(name, proba * 100)
@@ -122,6 +186,26 @@ while True:
 	# if the `q` key was pressed, break from the loop
 	if key == ord("q"):
 		break
+	if key == ord("a"):
+		for x in nombres:
+			if x == str(label)[0:len(x)]:
+				nombre = x
+		for y in page_names:
+			if y == nombre:
+				flag = 1
+		if flag == 0:
+			print(0)
+			x = threading.Thread(target=info_up)
+			x.start()
+			page_names.append(nombre)
+		else:
+			print(1)
+			flag = 0
+	if key == ord("z"):
+		for x in rt_labels:
+			if x in nombes:
+				x = threading.Thread(target=info_up())
+				x.start()
 
 # stop the timer and display FPS information
 fps.stop()
