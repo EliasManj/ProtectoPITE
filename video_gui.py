@@ -84,7 +84,7 @@ class VideoModel():
         self.recognizer = None        
         self.le = None
         self.embedder = None
-        # get video source width and heigh
+        # get video source width and heighs
 
     def initialize(self):
         self.open_models()
