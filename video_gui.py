@@ -11,7 +11,6 @@ import os
 import tkinter
 from resizeimage import resizeimage
 
-
 class PredictedFace():
 
     photo_buffer = []
@@ -26,7 +25,10 @@ class PredictedFace():
                 pass
             else:
                 PredictedFace.photo_buffer.append(predicted_face)
+        to_delete = [ face for face in PredictedFace.photo_buffer if face.name not in set(names) ]
         PredictedFace.photo_buffer = [ face for face in PredictedFace.photo_buffer if face.name in set(names) ]
+        for obj in to_delete:
+            del obj
         return
 
     def __init__(self, name, proba):
@@ -45,8 +47,10 @@ class PredictedFace():
             path = os.path.join('dataset', self.name, '{0}.txt'.format(self.name))
             file = open(path, "r")
             self.desc = file.read()
+            if not self.desc:
+                self.desc = 'no description'
         except OSError:
-            pass
+            self.desc = 'no description'
 
     def get_profile_pic(self):
         files  = [os.path.join('dataset', self.name, self.name + s) for s in ['.jpg', '.png', '.jpeg']]
@@ -161,8 +165,8 @@ class VideoModel():
                 name = self.le.classes_[j]
                 text = "{}: {:.2f}%".format(name, proba * 100)
                 y = startY - 10 if startY - 10 > 10 else startY + 10
-                cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 0, 255), 2)
-                cv2.putText(frame, text, (startX, y), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
+                cv2.rectangle(frame, (startX, startY), (endX, endY), (255, 0, 0), 2)
+                cv2.putText(frame, text, (startX, y), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 0, 0), 2)
                 self.fps.update()
                 face_info = PredictedFace(name, proba*100)
                 detected_faces.append(face_info)
@@ -197,8 +201,8 @@ class VideoModel():
                     name = self.le.classes_[j]
                     text = "{}: {:.2f}%".format(name, proba * 100)
                     y = startY - 10 if startY - 10 > 10 else startY + 10
-                    cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 0, 255), 2)
-                    cv2.putText(frame, text, (startX, y), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
+                    cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
+                    cv2.putText(frame, text, (startX, y), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 2)
             self.fps.update()
             cv2.imshow("Frame", frame)
             key = cv2.waitKey(1) & 0xFF
@@ -214,6 +218,8 @@ class VideoModel():
 
 class DetectionPanel:
 
+    detection_panels = []
+
     def __init__(self, parent, face):
         self.parent = parent
         self.face = face
@@ -228,8 +234,8 @@ class DetectionPanel:
         self.image_label.configure(image = self.face.photo)
         
     def construct_panel(self):
-        self.frame = tkinter.Frame(self.parent, width = 500, height = 500)
-        self.frame.grid(row = 0)
+        self.frame = tkinter.Frame(self.parent, width = 300, height = 300)
+        self.frame.grid(row = 0, column = len(DetectionPanel.detection_panels))
         self.name_label = tkinter.Label(self.frame, textvariable = self.face_name)
         self.name_label.grid(row = 0)
         self.image_label = tkinter.Label(self.frame, image = self.face.photo)
@@ -243,8 +249,6 @@ class DetectionPanel:
         self.face = face
         self.update()
         
-
-
 class App:
 
     def __init__(self, window, title, video_source=0):
@@ -257,14 +261,14 @@ class App:
         self.vid = self.video_model.vid.stream
         # create a canvas
         self.canvas = tkinter.Canvas(window, width = self.video_model.width, height = self.video_model.height)
-        self.canvas.grid(row=0, column=0)
+        self.canvas.grid(row=0)
         # panel
         self.frame = tkinter.Frame(window)
-        self.label = tkinter.Label(self.frame, text="Detections").grid(row = 0, column = 0)
-        self.frame.grid(row=1, column=0)
+        self.label = tkinter.Label(window, text="Detections")
+        self.label.grid(row=1)
+        self.frame.grid(row=2)
         # loop
         self.delay = 15
-        self.detection_panels = []
         self.start_loop()
 
     def start_loop(self):
@@ -283,22 +287,25 @@ class App:
 
     def check_faces(self, faces):
         detection_names = [face.name for face in faces]
-        buffer_names = [panel.face.name for panel in self.detection_panels]
+        buffer_names = [panel.face.name for panel in DetectionPanel.detection_panels]
         new_faces = [face for face in faces if face.name not in buffer_names]
-        faces_to_remove = [panel for panel in self.detection_panels if panel.face.name not in detection_names]
+        faces_to_remove = [panel for panel in DetectionPanel.detection_panels if panel.face.name not in detection_names]
         if new_faces:
             if faces_to_remove:
                 self.update_panels_recycle(faces_to_remove, new_faces)
                 if len(new_faces) > len(faces_to_remove):
-                    unadded = new_faces[faces_to_remove:]
-                    add_new_panels(unadded)
-                elif len(new_faces) < len(faces_to_remove):
-                    self.detection_panels = [ panel for panel in self.detection_panels if panel not in detection_names ]
-                else:
-                    pass
+                    unadded = new_faces[len(faces_to_remove):]
+                    self.add_new_panels(unadded)
             else:
                 self.add_new_panels(new_faces)
+        self.remove_old(detection_names)
             
+    def remove_old(self, detection_names):
+        to_destroy = [ panel for panel in DetectionPanel.detection_panels if panel.face.name not in detection_names ]
+        DetectionPanel.detection_panels = [ panel for panel in DetectionPanel.detection_panels if panel.face.name in detection_names ]
+        for obj in to_destroy:
+            obj.frame.grid_forget()
+            del obj
 
     def update_panels_recycle(self, recycle_panels, new_faces):
         for face, panel in zip(new_faces, recycle_panels):
@@ -308,9 +315,7 @@ class App:
         for face in new_faces:
             new_panel = DetectionPanel(self.frame, face)
             new_panel.construct_panel()
-            self.detection_panels.append(new_panel)
-                
-
+            DetectionPanel.detection_panels.append(new_panel)               
 
 if __name__ == "__main__":
     app = App(window = tkinter.Tk(screenName="tkinter window"), title = "Test", video_source=1)
