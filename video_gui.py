@@ -9,7 +9,6 @@ import time
 import cv2
 import os
 import tkinter
-from resizeimage import resizeimage
 
 class PredictedFace():
 
@@ -315,9 +314,10 @@ class App:
         for face in new_faces:
             new_panel = DetectionPanel(self.frame, face)
             new_panel.construct_panel()
+            new_panel.update()
             DetectionPanel.detection_panels.append(new_panel)               
 
 if __name__ == "__main__":
-    app = App(window = tkinter.Tk(screenName="tkinter window"), title = "Test", video_source=1)
+    app = App(window = tkinter.Tk(screenName="tkinter window"), title = "Test", video_source=0)
 
 
